@@ -1,5 +1,6 @@
 import puppeteer from 'puppeteer';
 import * as process from 'process';
+import {findPrice, findValue} from "./utils";
 
 console.log('Запущено приложение по сбору цен на вино');
 
@@ -9,6 +10,8 @@ const data = {
 
 const width = 1920;
 const height = 1080;
+
+
 
 puppeteer
   .launch({
@@ -32,18 +35,60 @@ puppeteer
     await page.waitForSelector('div.warning__block a.warning__button', {
       timeout: 5000,
     });
+    console.log('Подтверждаю возраст, жму кнопку');
     await page.click('div.warning__block a.warning__button');
-    // const fff = await page.content()
-    // console.log(fff.length)
-    //     .then(() => {
-    //   console.log('Поле найдено');
-    //   page.click('div.header__tradecenter_question-buttons button.header__tradecenter_question-btn.header__tradecenter_question-btn--active').then(() => {
-    //     console.log('Выбран город');
-    //   });
-    // }).catch(e=>{
-    //     console.log('Ошибка', e);
-    // });
-  })
+    // Получаем элементы в винами
+    console.log('Выбираем эелементы');
+    const elem = await page.$$('div.catalog-list__wrapper div.catalog-item');
+    // const result: {
+    //   id: string;
+    //   name: string;
+    //   fPrice: string;
+    //   tPrice: string;
+    // } = {};
+    for (let i = 0; i < elem.length; i++) {
+      const data = elem[i];
+      // Получение ID
+      const id = await data.evaluate((el) => el.getAttribute('data-productid'));
+      // Получение наименования
+      const domName = await data.$('a.catalog-item_name');
+      if (!domName) continue;
+      const name = await domName.evaluate((el) => el.innerHTML);
+      const domPrice = await data.$$('div.catalog-item__hidden-content');
+      if (!domPrice) continue
+      const data1:any = []
+      for (let j=0; j<domPrice.length; j++) {
+          const dddd = await domPrice[j].evaluate(el=>el.innerHTML)
+
+          const priceRaw = await domPrice[j].$("div.catalog-item_price-lvl_current")
+          if (!priceRaw) continue
+          const price = findPrice(await priceRaw.evaluate(el=> el.innerHTML))
+
+          const valueRaw = await domPrice[j].$("div.catalog-item_discount-lvl")
+          if (!valueRaw) continue
+          const value = findValue(await valueRaw.evaluate(el=> el.innerHTML))
+
+
+
+          data1.push({price, value, id})
+      }
+
+
+
+      // if (!domFPrice) continue;
+      // const fPrice = await domFPrice.evaluate((el) => el.innerHTML);
+
+      // Получение первой цены
+
+
+        // const fff = await data.$('.catalog-item__block');
+        console.log(name, data1);
+      }
+      // console.log(data)
+    }
+
+    // console.log(elem)
+  )
   .catch((e) => {
     console.log('Ошибка', e);
   })
