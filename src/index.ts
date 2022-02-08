@@ -11,6 +11,8 @@ const data = {
 const width = 1920;
 const height = 1080;
 
+console.time('start');
+
 puppeteer
   .launch({
     headless: true,
@@ -41,27 +43,29 @@ puppeteer
       let remaining2process = size;
       let pageCounter = 0;
       console.log('Выбираем элементы, Всего:', size);
-      const totalList:{
-          id:string,
-          name:string,
-          prices:{
-             price:number,
-             value:number
-          }[]
-      }[] = []
+      const totalList: {
+        id: string;
+        name: string;
+        prices: {
+          price: number;
+          value: number;
+        }[];
+      }[] = [];
+      console.timeLog('start', 'Начата обработка страниц');
       while (remaining2process > 0) {
         pageCounter++;
-        console.log("Обработка страницы....",pageCounter, "Осталось обработать...", remaining2process)
+        // console.log('Обработка страницы....', pageCounter, 'Осталось обработать...', remaining2process);
         if (pageCounter !== 1) {
           await page.goto(`${data.url}&page=${pageCounter}`, { waitUntil: 'networkidle2' });
         }
+        console.timeLog('start', `Загружена страница: ${pageCounter}`);
         const elem = await page.$$('div.catalog-list__wrapper div.catalog-item');
         remaining2process -= elem.length;
         for (let i = 0; i < elem.length; i++) {
           const data = elem[i];
           // Получение ID
           const id = await data.evaluate((el) => el.getAttribute('data-productid'));
-          if (!id) continue
+          if (!id) continue;
           // Получение наименования
           const domName = await data.$('a.catalog-item_name');
           if (!domName) continue;
@@ -79,12 +83,15 @@ puppeteer
             prodPrice.push({ price, value });
           }
           totalList.push({
-              id, name, prices:prodPrice
-          })
-          console.log(id, name, prodPrice);
+            id,
+            name,
+            prices: prodPrice,
+          });
+          // console.log(id, name, prodPrice);
         }
+        console.timeLog('start', `Обработано страниц: ${pageCounter}`, `осталось обработать: ${remaining2process}`);
       }
-      console.log("Всего обработано...", totalList.length)
+      console.log('Всего обработано...', totalList.length);
     }
 
     // console.log(elem)
@@ -93,6 +100,7 @@ puppeteer
     console.log('Ошибка', e);
   })
   .finally(() => {
+    console.timeEnd('start');
     console.log('Завершена обработка');
     process.exit(0);
   });
