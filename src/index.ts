@@ -1,6 +1,9 @@
 import puppeteer from 'puppeteer';
 import * as process from 'process';
 import { findPrice, findValue, getFullQuantity } from './utils';
+import { IProductList } from './types';
+import { db } from './db/dbController';
+import { ProductModel } from './models/productModel';
 
 console.log('Запущено приложение по сбору цен на вино');
 
@@ -10,8 +13,11 @@ const data = {
 
 const width = 1920;
 const height = 1080;
+const startPage = 0;
 
 console.time('start');
+
+const wineModel = new ProductModel(db);
 
 puppeteer
   .launch({
@@ -41,16 +47,9 @@ puppeteer
       // Определяем количество вин
       const size = getFullQuantity((await (await page.$('span.search-page__total'))?.evaluate((el) => el.innerHTML)) || '0');
       let remaining2process = size;
-      let pageCounter = 0;
+      let pageCounter = startPage;
       console.log('Выбираем элементы, Всего:', size);
-      const totalList: {
-        id: string;
-        name: string;
-        prices: {
-          price: number;
-          value: number;
-        }[];
-      }[] = [];
+      const totalList: IProductList[] = [];
       console.timeLog('start', 'Начата обработка страниц');
       while (remaining2process > 0) {
         pageCounter++;
@@ -82,11 +81,15 @@ puppeteer
 
             prodPrice.push({ price, value });
           }
-          totalList.push({
+          const wine = {
             id,
-            name,
+            name: name.trim().replace("amp;", ""),
             prices: prodPrice,
-          });
+          };
+          totalList.push(wine);
+          await wineModel.addPrice(wine)
+
+          // process.exit(1);
           // console.log(id, name, prodPrice);
         }
         console.timeLog('start', `Обработано страниц: ${pageCounter}`, `осталось обработать: ${remaining2process}`);

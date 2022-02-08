@@ -9,7 +9,7 @@ const m = regGetPrice.exec(s)
 }
 
 export const findValue = (s:string):number=>{
-    const regGetValue = /^.*(?<value>\d+)\sшт.*$/gm
+    const regGetValue = /^.*(?<value>\d+)\s((шт)|(Па)|(уп)).*$/gm
     const m = regGetValue.exec(s)
     if (m && m.groups) return Number(m.groups.value.replace(/ /g, ''))
     return 0

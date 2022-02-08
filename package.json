@@ -13,6 +13,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/mysql": "^2.15.20",
     "@types/node": "^14.14.6",
     "typescript": "^4.4.2"
   },
@@ -24,6 +25,7 @@
     "endOfLine": "crlf"
   },
   "dependencies": {
+    "mysql": "^2.18.1",
     "prettier": "^2.5.1",
     "puppeteer": "^13.1.3"
   }
