@@ -1,6 +1,6 @@
 import puppeteer from 'puppeteer';
 import * as process from 'process';
-import { findPrice, findValue } from './utils';
+import { findPrice, findValue, getFullQuantity } from './utils';
 
 console.log('Запущено приложение по сбору цен на вино');
 
@@ -36,26 +36,39 @@ puppeteer
       });
       console.log('Подтверждаю возраст, жму кнопку');
       await page.click('div.warning__block a.warning__button');
-      // Получаем элементы в винами
-      console.log('Выбираем элементы');
-      const elem = await page.$$('div.catalog-list__wrapper div.catalog-item');
-      // const result: {
-      //   id: string;
-      //   name: string;
-      //   fPrice: string;
-      //   tPrice: string;
-      // } = {};
-      for (let i = 0; i < elem.length; i++) {
-        const data = elem[i];
-        // Получение ID
-        const id = await data.evaluate((el) => el.getAttribute('data-productid'));
-        // Получение наименования
-        const domName = await data.$('a.catalog-item_name');
-        if (!domName) continue;
-        const name = await domName.evaluate((el) => el.innerHTML);
-        const domPrice = await data.$$('div.catalog-item__hidden-content div.catalog-item_cost');
-        const prodPrice: any = [];
-        for (let j=0; j<domPrice.length; j++) {
+      // Определяем количество вин
+      const size = getFullQuantity((await (await page.$('span.search-page__total'))?.evaluate((el) => el.innerHTML)) || '0');
+      let remaining2process = size;
+      let pageCounter = 0;
+      console.log('Выбираем элементы, Всего:', size);
+      const totalList:{
+          id:string,
+          name:string,
+          prices:{
+             price:number,
+             value:number
+          }[]
+      }[] = []
+      while (remaining2process > 0) {
+        pageCounter++;
+        console.log("Обработка страницы....",pageCounter, "Осталось обработать...", remaining2process)
+        if (pageCounter !== 1) {
+          await page.goto(`${data.url}&page=${pageCounter}`, { waitUntil: 'networkidle2' });
+        }
+        const elem = await page.$$('div.catalog-list__wrapper div.catalog-item');
+        remaining2process -= elem.length;
+        for (let i = 0; i < elem.length; i++) {
+          const data = elem[i];
+          // Получение ID
+          const id = await data.evaluate((el) => el.getAttribute('data-productid'));
+          if (!id) continue
+          // Получение наименования
+          const domName = await data.$('a.catalog-item_name');
+          if (!domName) continue;
+          const name = await domName.evaluate((el) => el.innerHTML);
+          const domPrice = await data.$$('div.catalog-item__hidden-content div.catalog-item_cost');
+          const prodPrice: any = [];
+          for (let j = 0; j < domPrice.length; j++) {
             const priceRaw = await domPrice[j].$('div.catalog-item_price-lvl_current');
             if (!priceRaw) continue;
             const price = findPrice(await priceRaw.evaluate((el) => el.innerHTML));
@@ -64,10 +77,14 @@ puppeteer
             const value = findValue(await valueRaw.evaluate((el) => el.innerHTML));
 
             prodPrice.push({ price, value });
+          }
+          totalList.push({
+              id, name, prices:prodPrice
+          })
+          console.log(id, name, prodPrice);
         }
-        console.log(id, name, prodPrice);
       }
-      // console.log(data)
+      console.log("Всего обработано...", totalList.length)
     }
 
     // console.log(elem)

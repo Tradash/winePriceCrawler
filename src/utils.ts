@@ -15,3 +15,10 @@ export const findValue = (s:string):number=>{
     return 0
 }
 
+export const getFullQuantity = (s:string):number=>{
+const reg=/^\s*(?<quantity>\d*).*$/gm
+    const m = reg.exec(s)
+    if (m && m.groups) return Number(m.groups.quantity.replace(/ /g, ''))
+    return 0
+}
+
