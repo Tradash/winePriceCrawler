@@ -8,11 +8,11 @@ const m = regGetPrice.exec(s)
     return 0
 }
 
-export const findValue = (s:string):number=>{
-    const regGetValue = /^.*(?<value>\d+)\s((шт)|(Па)|(уп)).*$/gm
+export const findValue = (s:string):string=>{
+    const regGetValue = /^\D*(?<value>\d+\s((шт)|(Па)|(уп)|(кг))).*$/gm
     const m = regGetValue.exec(s)
-    if (m && m.groups) return Number(m.groups.value.replace(/ /g, ''))
-    return 0
+    if (m && m.groups) return m.groups.value.trim()
+    return "Не указан"
 }
 
 export const getFullQuantity = (s:string):number=>{

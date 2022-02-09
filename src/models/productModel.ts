@@ -33,7 +33,15 @@ export class ProductModel {
     const wine = await this.findProductByCode(data.id);
     if (wine.length === 0) {
       // Добавляем запись в БД
-      const newWine = await this.db.doQuery<OkPacket>('insert into product (vendor, code, name) values (?,?,?)', 'metro-cc', data.id, data.name);
+      const newWine = await this.db.doQuery<OkPacket>(
+        'insert into product (vendor, code, name, urlDescription, urlPicture, catalogName) values (?,?,?,?,?,?)',
+        'metro-cc',
+        data.id,
+        data.name,
+        data.prodUrl,
+        data.pictUrl,
+        data.categoryName
+      );
       recordId = newWine.insertId;
     } else {
       recordId = wine[0].id;
@@ -45,23 +53,17 @@ export class ProductModel {
   async findProductByCode(code: string): Promise<IProduct[]> {
     return this.db.doQuery<IProduct[]>('select * from product where code=?', code);
   }
-  async findLastPrice(code: string) {
-    return this.db.doQuery<ILastPrice[]>('SELECT * FROM productprice WHERE productId=? ORDER BY priceDate DESC LIMIT 1', code);
-  }
+  // async findLastPrice(code: string) {
+  //   return this.db.doQuery<ILastPrice[]>('SELECT * FROM productprice WHERE productId=? ORDER BY priceDate DESC LIMIT 1', code);
+  // }
   async addLastPrice(id: number, data: IProductList) {
-    return this.db.doQuery<OkPacket[]>(
-      'insert into productprice (productId, priceX1, priceX3, priceX6) values (?,?,?,?)',
+     const newTag = await this.db.doQuery<OkPacket>(
+      'insert into pricetag (productId) values (?)',
       id,
-      this.xPrice(1, data),
-      this.xPrice(3, data),
-      this.xPrice(6, data)
     );
+     for (let i=0; i<data.prices.length; i++) {
+         await this.db.doQuery("insert into pricedetail (priceTagId, measure, price) values (?,?,?)", newTag.insertId, data.prices[i].value, data.prices[i].price)
+     }
   }
 
-  xPrice(x: number, data: IProductList): number | null {
-    for (let i = 0; i < data.prices.length; i++) {
-      if (x === data.prices[i].value) return data.prices[i].price;
-    }
-    return null;
-  }
 }
