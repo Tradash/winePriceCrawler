@@ -121,6 +121,7 @@ puppeteer
         console.timeLog(timerName, `Обработано страниц: ${pageCounter}`, `осталось обработать: ${remaining2process}`);
       }
       console.log('Всего обработано...', totalList.length, shopData.categoriesUrl);
+      await browser.close()
     }
 
     // console.log(elem)

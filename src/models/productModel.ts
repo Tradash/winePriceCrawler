@@ -57,13 +57,17 @@ export class ProductModel {
   //   return this.db.doQuery<ILastPrice[]>('SELECT * FROM productprice WHERE productId=? ORDER BY priceDate DESC LIMIT 1', code);
   // }
   async addLastPrice(id: number, data: IProductList) {
-     const newTag = await this.db.doQuery<OkPacket>(
-      'insert into pricetag (productId) values (?)',
-      id,
-    );
-     for (let i=0; i<data.prices.length; i++) {
-         await this.db.doQuery("insert into pricedetail (priceTagId, measure, price) values (?,?,?)", newTag.insertId, data.prices[i].value, data.prices[i].price)
-     }
+    const newTag = await this.db.doQuery<OkPacket>('insert into pricetag (productId) values (?)', id);
+    for (let i = 0; i < data.prices.length; i++) {
+      await this.db.doQuery('insert into pricedetail (priceTagId, measure, price) values (?,?,?)', newTag.insertId, data.prices[i].value, data.prices[i].price);
+    }
   }
 
+  async findProducts4GetAdditionalSpec(limit = 100) {
+    return await this.db.doQuery<{ id: number; urlDescription: string }[]>('select id, urlDescription from product where brand is null limit ?', limit);
+  }
+
+  async updateProductAdditional(data: { id: number; country: string; brand: string; bodyJson: string }) {
+    return await this.db.doQuery('update product set country=?, brand=?, specification=? where id=?', data.country, data.brand, data.bodyJson, data.id);
+  }
 }
