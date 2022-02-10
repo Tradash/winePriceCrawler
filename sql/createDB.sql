@@ -10,7 +10,7 @@ CREATE TABLE `product` (
 	`brand` VARCHAR(50) NULL DEFAULT NULL COLLATE 'utf8_general_ci',
 	`productType` VARCHAR(50) NULL DEFAULT NULL COLLATE 'utf8_general_ci',
 	`productCategory` VARCHAR(50) NULL DEFAULT NULL COLLATE 'utf8_general_ci',
-	`Specifications` JSON NOT NULL,
+	`specification` JSON NULL DEFAULT NULL,
 	`dateCreated` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	`dateUpdated` DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 	PRIMARY KEY (`id`) USING BTREE,
@@ -21,6 +21,7 @@ COLLATE='utf8_general_ci'
 ENGINE=InnoDB
 AUTO_INCREMENT=8198
 ;
+
 
 
 CREATE TABLE `pricetag` (

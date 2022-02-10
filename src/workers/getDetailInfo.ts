@@ -2,11 +2,6 @@ import puppeteer from 'puppeteer';
 import { ProductModel } from '../models/productModel';
 import { db } from '../db/dbController';
 
-// const data = [
-//   'https://msk.metro-cc.ru/category/alkogolnaya-produkciya/vino/krasnoe-vino/50-50-toskana-kr-sh',
-//   'https://msk.metro-cc.ru/category/alkogolnaya-produkciya/shampanskoe-igristye-vina/beloe/louis-roederer-cristal-bryut-v-podarochnoj-upakovke-075-l',
-//   'https://msk.metro-cc.ru/category/myasnye/myaso/govyadina/vyrezka-govyazhya-ekstra-top-choice-zarechnoe',
-// ];
 const width = 1920;
 const height = 1080;
 
@@ -16,7 +11,7 @@ console.time(timerName);
 
 const wineModel = new ProductModel(db);
 
-wineModel.findProducts4GetAdditionalSpec(200).then((data) => {
+wineModel.findProducts4GetAdditionalSpec(500).then((data) => {
   puppeteer
     .launch({
       headless: true,
