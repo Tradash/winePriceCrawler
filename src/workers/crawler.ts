@@ -106,7 +106,7 @@ puppeteer
           }
           const wine = {
             id,
-            categoryName,
+            categoryName: categoryName.trim(),
             name: name.trim().replace('amp;', ''),
             prodUrl: shopData.shopUrl + prodUrl,
             pictUrl: pictUrl,

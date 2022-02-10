@@ -11,7 +11,7 @@ console.time(timerName);
 
 const wineModel = new ProductModel(db);
 
-wineModel.findProducts4GetAdditionalSpec(500).then((data) => {
+wineModel.findProducts4GetAdditionalSpec(1000).then((data) => {
   puppeteer
     .launch({
       headless: true,
@@ -52,7 +52,7 @@ wineModel.findProducts4GetAdditionalSpec(500).then((data) => {
           const value = await (await elem.$('div.product-page__fullspec-line span'))?.evaluate((el) => el.innerHTML);
           if (nameSpec && value) fullSpec[nameSpec] = value;
         }
-        await wineModel.updateProductAdditional({ id: data[i].id, country: fullSpec['Страна'] || "Не указана", brand: brand || "Не указан", bodyJson: JSON.stringify(fullSpec) || "Не указан" });
+        await wineModel.updateProductAdditional({ id: data[i].id, country: fullSpec['Страна'] || "Не указана", brand: brand.replace('amp;', '') || "Не указан", bodyJson: JSON.stringify(fullSpec) || "Не указан" });
         console.timeLog(timerName, `Обработано: ${i+1}, Осталось: ${data.length-i-1}`);
 
       }

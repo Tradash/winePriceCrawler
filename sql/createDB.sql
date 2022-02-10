@@ -15,11 +15,13 @@ CREATE TABLE `product` (
 	`dateUpdated` DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 	PRIMARY KEY (`id`) USING BTREE,
 	INDEX `vendor` (`vendor`) USING BTREE,
-	INDEX `country` (`country`) USING BTREE
+	INDEX `country` (`country`) USING BTREE,
+	INDEX `code` (`code`) USING BTREE,
+	INDEX `catalogName` (`catalogName`) USING BTREE
 )
 COLLATE='utf8_general_ci'
 ENGINE=InnoDB
-AUTO_INCREMENT=8198
+AUTO_INCREMENT=8378
 ;
 
 
