@@ -64,7 +64,7 @@ export class ProductModel {
   }
 
   async findProducts4GetAdditionalSpec(limit = 100) {
-    return await this.db.doQuery<{ id: number; urlDescription: string }[]>('select id, urlDescription from product where brand is null limit ?', limit);
+    return await this.db.doQuery<{ id: number; urlDescription: string }[]>(`select id, urlDescription from product where brand is NULL UNION select id, urlDescription from product WHERE specification LIKE '{}' limit ?`, limit);
   }
 
   async updateProductAdditional(data: { id: number; country: string; brand: string; bodyJson: string }) {

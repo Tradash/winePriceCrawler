@@ -12,6 +12,7 @@ console.time(timerName);
 const wineModel = new ProductModel(db);
 
 wineModel.findProducts4GetAdditionalSpec(1000).then((data) => {
+  console.timeLog(timerName, `Найдено продуктов без спецификации:${data.length}`)
   puppeteer
     .launch({
       headless: true,
