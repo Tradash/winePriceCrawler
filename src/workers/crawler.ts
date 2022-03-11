@@ -5,6 +5,7 @@ import { ProductModel } from '../models/productModel';
 import { db } from '../db/dbController';
 import { findPrice, findValue, getFullQuantity } from '../utils';
 import { IProductList } from '../types';
+import {isHeadless} from "../config";
 
 const shopData = {
   shopUrl: threads.workerData.shopUrl,
@@ -26,7 +27,7 @@ const wineModel = new ProductModel(db);
 
 puppeteer
   .launch({
-    headless: true,
+    headless: isHeadless,
     slowMo: 10,
     args: [`--window-size=${width},${height}`, '--disable-web-security', '--disable-features=IsolateOrigins,site-per-process', '--incognito'],
   })

@@ -1,6 +1,7 @@
 import puppeteer from 'puppeteer';
 import { ProductModel } from '../models/productModel';
 import { db } from '../db/dbController';
+import {isHeadless} from "../config";
 
 const width = 1920;
 const height = 1080;
@@ -15,7 +16,7 @@ wineModel.findProducts4GetAdditionalSpec(1000).then((data) => {
   console.timeLog(timerName, `Найдено продуктов без спецификации:${data.length}`)
   puppeteer
     .launch({
-      headless: true,
+      headless: isHeadless,
       slowMo: 10,
       args: [`--window-size=${width},${height}`, '--disable-web-security', '--disable-features=IsolateOrigins,site-per-process', '--incognito'],
     })

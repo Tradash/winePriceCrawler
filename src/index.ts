@@ -1,16 +1,6 @@
-import { startWorker } from './workers/initWorkers';
-import { db } from './db/dbController';
-
-const shopData = {
-  shopUrl: 'https://msk.metro-cc.ru',
-  descUrl: '?order=price_desc',
-  categories: [
-    '/category/myasnye/myaso/govyadina',
-    '/category/alkogolnaya-produkciya/vino',
-    '/category/alkogolnaya-produkciya/shampanskoe-igristye-vina',
-    '/category/chaj-kofe-kakao/kofe-zernovoj',
-  ],
-};
+import {startWorker} from './workers/initWorkers';
+import {db} from './db/dbController';
+import {shopData} from "./config";
 
 if (process.argv.length === 2) {
   console.log('Запущено приложение по парсингу цен');
