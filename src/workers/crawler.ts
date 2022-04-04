@@ -5,7 +5,7 @@ import { ProductModel } from '../models/productModel';
 import { db } from '../db/dbController';
 import { findPrice, findValue, getFullQuantity } from '../utils';
 import { IProductList } from '../types';
-import {isHeadless} from "../config";
+import { isHeadless } from '../config';
 
 const shopData = {
   shopUrl: threads.workerData.shopUrl,
@@ -55,6 +55,31 @@ puppeteer
         console.log('Ошибка при подтверждении возраста', shopData.categoriesUrl);
       }
 
+      // Выбираем магазин
+      try {
+        console.log('Выбираю магазин', shopData.categoriesUrl);
+        await page.waitForSelector('svg.delivery-info__pin-icon', {
+          timeout: 2000,
+        });
+        console.log('Нажимаю иконку выбора магазина:', shopData.categoriesUrl);
+        await page.click('svg.delivery-info__pin-icon');
+        console.log('Ищем самовывоз', shopData.categoriesUrl);
+        await page.waitForSelector('input[value=pickup].obtainments-list__control', {
+          timeout: 2000,
+        });
+        console.log('Жмем самовывоз:', shopData.categoriesUrl);
+        await page.click('input[value=pickup].obtainments-list__control');
+
+        console.log('Ищем сохранить', shopData.categoriesUrl);
+        await page.waitForSelector('button.rectangle-button.reset--button-styles.blue.lg.normal.wide', {
+          timeout: 2000,
+        });
+        console.log('Жмем сохранить:', shopData.categoriesUrl);
+        await page.click('button.rectangle-button.reset--button-styles.blue.lg.normal.wide');
+      } catch (e) {
+        console.log('Ошибка при выборе магазина', shopData.categoriesUrl);
+      }
+
       // Определяем количество вин
       const size = getFullQuantity((await (await page.$('span.search-page__total'))?.evaluate((el) => el.innerHTML)) || '0');
       const categoryName = (await (await page.$('h1.catalog-title'))?.evaluate((el) => el.innerHTML)) || shopData.categoriesUrl;
@@ -78,33 +103,42 @@ puppeteer
           const id = await data.evaluate((el) => el.getAttribute('data-productid'));
           if (!id) continue;
 
+          // let flag = false;
+          // if (id === '638859') flag = true;
+
           // Получение наименования
           const domName = await data.$('a.catalog-item_name');
           if (!domName) continue;
           const name = await domName.evaluate((el) => el.innerHTML);
+          // if (flag) console.warn(1, name);
 
           // Ссылка на детализацию товара
           const prodUrlNode = await data.$('a.catalog-item_name');
           if (!prodUrlNode) continue;
           const prodUrl = await prodUrlNode.evaluate((el) => el.getAttribute('href'));
-
+          // if (flag) console.warn(2, prodUrl);
           // ссылка на картинку
           const pictUrlNode = await data.$('div.catalog-item_defaut-image a.catalog-item_image');
           if (!pictUrlNode) continue;
           const pictUrl = await pictUrlNode.evaluate((el) => el.getAttribute('data-src') || '');
-
+          // if (flag) console.warn(3, pictUrl);
           // Получение цен
           const domPrice = await data.$$('div.catalog-item__hidden-content div.catalog-item_cost');
           const prodPrice: any = [];
           for (let j = 0; j < domPrice.length; j++) {
             const priceRaw = await domPrice[j].$('div.catalog-item_price-lvl_current');
             if (!priceRaw) continue;
-            const price = findPrice(await priceRaw.evaluate((el) => el.innerHTML));
+            const body = await priceRaw.evaluate((el) => el.innerHTML);
+            // if (flag) console.warn(4, j, body);
+            const price = findPrice(body);
             const valueRaw = await domPrice[j].$('div.catalog-item_discount-lvl');
             if (!valueRaw) continue;
-            const value = findValue(await valueRaw.evaluate((el) => el.innerHTML));
+            const body01 = await valueRaw.evaluate((el) => el.innerHTML);
+            // if (flag) console.warn(5, j, body01);
+            const value = findValue(body01);
             prodPrice.push({ price, value });
           }
+          // if (flag) process.exit(1);
           const wine = {
             id,
             categoryName: categoryName.trim(),
@@ -115,14 +149,11 @@ puppeteer
           };
           totalList.push(wine);
           await wineModel.addPrice(wine);
-
-          // process.exit(1);
-          // console.log(id, name, prodPrice);
         }
         console.timeLog(timerName, `Обработано страниц: ${pageCounter}`, `осталось обработать: ${remaining2process}`);
       }
       console.log('Всего обработано...', totalList.length, shopData.categoriesUrl);
-      await browser.close()
+      await browser.close();
     }
 
     // console.log(elem)
