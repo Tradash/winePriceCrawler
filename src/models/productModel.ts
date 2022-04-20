@@ -29,7 +29,7 @@ export class ProductModel {
 
   async addPrice(data: IProductList) {
     //1. Проверяем есть ли такой id уже
-    let recordId = 0;
+    let recordId;
     const wine = await this.findProductByCode(data.id);
     if (wine.length === 0) {
       // Добавляем запись в БД
@@ -64,7 +64,7 @@ export class ProductModel {
   }
 
   async findProducts4GetAdditionalSpec(limit = 100) {
-    return await this.db.doQuery<{ id: number; urlDescription: string }[]>(`select id, urlDescription from product where brand is NULL UNION select id, urlDescription from product WHERE specification LIKE '{}' limit ?`, limit);
+    return await this.db.doQuery<{ id: number; urlDescription: string }[]>(`select id, urlDescription from product where brand is NULL UNION select id, urlDescription from product WHERE specification LIKE '{}' ORDER BY id DESC limit ?`, limit);
   }
 
   async updateProductAdditional(data: { id: number; country: string; brand: string; bodyJson: string }) {

@@ -18,3 +18,11 @@ export const getFullQuantity = (s: string): number => {
   if (m && m.groups) return Number(m.groups.quantity.replace(/ /g, ''));
   return 0;
 };
+
+export const delay = async (delayInms: number): Promise<number> => {
+    return new Promise(resolve => {
+        setTimeout(() => {
+            resolve(2);
+        }, delayInms);
+    });
+};

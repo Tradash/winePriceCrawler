@@ -3,7 +3,7 @@ import * as process from 'process';
 import threads from 'worker_threads';
 import { ProductModel } from '../models/productModel';
 import { db } from '../db/dbController';
-import { findPrice, findValue, getFullQuantity } from '../utils';
+import { delay, findPrice, findValue, getFullQuantity } from '../utils';
 import { IProductList } from '../types';
 import { isHeadless } from '../config';
 
@@ -151,6 +151,7 @@ puppeteer
           await wineModel.addPrice(wine);
         }
         console.timeLog(timerName, `Обработано страниц: ${pageCounter}`, `осталось обработать: ${remaining2process}`);
+        await delay(Math.floor(Math.random() * 10000) + 1);
       }
       console.log('Всего обработано...', totalList.length, shopData.categoriesUrl);
       await browser.close();
