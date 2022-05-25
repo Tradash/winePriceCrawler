@@ -1,11 +1,9 @@
-import puppeteer from 'puppeteer';
 import * as process from 'process';
 import threads from 'worker_threads';
 import { ProductModel } from '../models/productModel';
 import { db } from '../db/dbController';
-import { delay, findPrice, findValue, getFullQuantity } from '../utils';
+import {delay, findCorrectVersionSite, findPrice, findValue, getFullQuantity} from '../utils';
 import { IProductList } from '../types';
-import { isHeadless } from '../config';
 
 const shopData = {
   shopUrl: threads.workerData.shopUrl,
@@ -15,8 +13,6 @@ const shopData = {
 
 console.log(`Запущен воркер по парсингу цен ${shopData.categoriesUrl}`, new Date().getTime());
 
-const width = 1920;
-const height = 1080;
 const startPage = 0;
 
 const timerName = `start:${shopData.categoriesUrl}`;
@@ -25,12 +21,7 @@ console.time(timerName);
 
 const wineModel = new ProductModel(db);
 
-puppeteer
-  .launch({
-    headless: isHeadless,
-    slowMo: 10,
-    args: [`--window-size=${width},${height}`, '--disable-web-security', '--disable-features=IsolateOrigins,site-per-process', '--incognito'],
-  })
+findCorrectVersionSite()
   .then(
     async (browser) => {
       const context = browser.defaultBrowserContext();

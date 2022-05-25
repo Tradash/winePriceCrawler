@@ -1,11 +1,6 @@
-import puppeteer from 'puppeteer';
 import { ProductModel } from '../models/productModel';
 import { db } from '../db/dbController';
-import {isHeadless} from "../config";
-import {delay} from "../utils";
-
-const width = 1920;
-const height = 1080;
+import { delay, findCorrectVersionSite } from '../utils';
 
 const timerName = `start:GetExtInfo`;
 
@@ -14,16 +9,14 @@ console.time(timerName);
 const wineModel = new ProductModel(db);
 
 wineModel.findProducts4GetAdditionalSpec(1000).then((data) => {
-  console.timeLog(timerName, `Найдено продуктов без спецификации:${data.length}`)
-  puppeteer
-    .launch({
-      headless: isHeadless,
-      slowMo: 10,
-      args: [`--window-size=${width},${height}`, '--disable-web-security', '--disable-features=IsolateOrigins,site-per-process', '--incognito'],
-    })
+  console.timeLog(timerName, `Найдено продуктов без спецификации:${data.length}`);
+  findCorrectVersionSite()
     .then(async (browser) => {
       const context = browser.defaultBrowserContext();
       let page = await browser.newPage();
+      await context.overridePermissions(`https://online.metro-cc.ru/`, ['notifications']);
+      await page.goto(`https://online.metro-cc.ru/`, { waitUntil: 'networkidle2' });
+
       for (let i = 0; i < data.length; i++) {
         if (i == 0) {
           await context.overridePermissions(data[i].urlDescription, ['notifications']);
@@ -55,16 +48,22 @@ wineModel.findProducts4GetAdditionalSpec(1000).then((data) => {
           const value = await (await elem.$('div.product-page__fullspec-line span'))?.evaluate((el) => el.innerHTML);
           if (nameSpec && value) fullSpec[nameSpec] = value;
         }
-        await wineModel.updateProductAdditional({ id: data[i].id, country: fullSpec['Страна'] || "Не указана", brand: brand.replace('amp;', '') || "Не указан", bodyJson: JSON.stringify(fullSpec) || "Не указан" });
+        await wineModel.updateProductAdditional({
+          id: data[i].id,
+          country: fullSpec['Страна'] || 'Не указана',
+          brand: brand.replace('amp;', '') || 'Не указан',
+          bodyJson: JSON.stringify(fullSpec) || 'Не указан',
+        });
         await delay(Math.floor(Math.random() * 5000) + 1);
-        console.timeLog(timerName, `Обработано: ${i+1}, Осталось: ${data.length-i-1}`);
-
+        console.timeLog(timerName, `Обработано: ${i + 1}, Осталось: ${data.length - i - 1}`);
       }
       await browser.close();
-    }).catch(e=>{
-      console.log("Ошибка при обработке", e)
-  }).finally(()=>{
+    })
+    .catch((e) => {
+      console.log('Ошибка при обработке', e);
+    })
+    .finally(() => {
       db.closeConnection();
-      console.timeEnd(timerName)
-  });
+      console.timeEnd(timerName);
+    });
 });

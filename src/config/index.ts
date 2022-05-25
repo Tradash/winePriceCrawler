@@ -4,8 +4,8 @@ export const shopData = {
   descUrl: '?order=price_desc',
   categories: [
     '/category/myasnye/myaso/govyadina',
-    '/category/alkogolnaya-produkciya/vino',
-    '/category/alkogolnaya-produkciya/shampanskoe-igristye-vina',
     '/category/chaj-kofe-kakao/kofe-zernovoj',
+    '/category/alkogolnaya-produkciya/shampanskoe-igristye-vina',
+    '/category/alkogolnaya-produkciya/vino',
   ],
 };
