@@ -1,5 +1,5 @@
 import puppeteer from 'puppeteer';
-import { isHeadless } from './config';
+import {isHeadless, shopData} from './config';
 
 export const findPrice = (s: string): number => {
   const regGetPrice = new RegExp('(?<price>(?:\\d+\\s)?\\d+).*$', 'gm');
@@ -43,20 +43,20 @@ export const findCorrectVersionSite = async (): Promise<puppeteer.Browser> => {
     });
     const context = browser.defaultBrowserContext();
     let page = await browser.newPage();
-    await context.overridePermissions(`https://online.metro-cc.ru/`, ['notifications']);
-    await page.goto(`https://online.metro-cc.ru/`, { waitUntil: 'networkidle2' });
+    await context.overridePermissions(shopData.shopUrl, ['notifications']);
+    await page.goto(shopData.shopUrl, { waitUntil: 'networkidle2' });
     try {
-      await page.waitForSelector('div.header-main__content-main div.header-address', {
+      await page.waitForSelector('span.header-main__content-main div.header-address', {
         timeout: 3000,
       });
       count++;
-      console.log('Некорректная версия сайта, сделано попыток', count);
-      await page.close();
-      await browser.close();
+      console.log('Корректная версия сайта, сделано попыток', count);
+        await page.close();
+        count = 100;
     } catch (e) {
-      console.log('Корректная версия сайта, сделано попыток', count+1);
-      await page.close();
-      count = 100;
+      console.log('Некорректная версия сайта, сделано попыток', count+1);
+        await page.close();
+        await browser.close();
     }
   }
 

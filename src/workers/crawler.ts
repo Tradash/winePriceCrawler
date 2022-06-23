@@ -29,51 +29,63 @@ findCorrectVersionSite()
       await context.overridePermissions(shopData.shopUrl + shopData.categoriesUrl + shopData.descUrl, ['notifications']);
       console.log('Переход на страницу', shopData.categoriesUrl);
       await page.goto(shopData.shopUrl + shopData.categoriesUrl + shopData.descUrl, { waitUntil: 'networkidle2' });
-      // TODO возможно нужно сделать выбор города и может и магазина
-      console.log('Подтверждаю город', shopData.categoriesUrl);
-      await page.waitForSelector('div.header__tradecenter_question-buttons button.header__tradecenter_question-btn.header__tradecenter_question-btn--active', {
-        timeout: 5000,
-      });
-      await page.click('div.header__tradecenter_question-buttons button.header__tradecenter_question-btn.header__tradecenter_question-btn--active');
-      try {
-        console.log('Подтверждаю возраст', shopData.categoriesUrl);
-        await page.waitForSelector('div.warning__block a.warning__button', {
-          timeout: 5000,
-        });
-        console.log('Подтверждаю возраст, жму кнопку', shopData.categoriesUrl);
-        await page.click('div.warning__block a.warning__button');
-      } catch (e) {
-        console.log('Ошибка при подтверждении возраста', shopData.categoriesUrl);
-      }
+
+      // console.log('Подтверждаю город', shopData.categoriesUrl);
+      // await page.waitForSelector('span.header-address__receive-address', {
+      //   timeout: 5000,
+      // });
+      // await page.click('span.header-address__receive-address');
+      // try {
+      //   console.log('Подтверждаю возраст', shopData.categoriesUrl);
+      //   await page.waitForSelector('div.warning__block a.warning__button', {
+      //     timeout: 5000,
+      //   });
+      //   console.log('Подтверждаю возраст, жму кнопку', shopData.categoriesUrl);
+      //   await page.click('div.warning__block a.warning__button');
+      // } catch (e) {
+      //   console.log('Ошибка при подтверждении возраста', shopData.categoriesUrl);
+      // }
 
       // Выбираем магазин
       try {
         console.log('Выбираю магазин', shopData.categoriesUrl);
-        await page.waitForSelector('svg.delivery-info__pin-icon', {
+        await page.waitForSelector('span.header-address__receive-address', {
           timeout: 2000,
         });
         console.log('Нажимаю иконку выбора магазина:', shopData.categoriesUrl);
-        await page.click('svg.delivery-info__pin-icon');
+        await page.click('span.header-address__receive-address');
         console.log('Ищем самовывоз', shopData.categoriesUrl);
-        await page.waitForSelector('input[value=pickup].obtainments-list__control', {
+        await page.waitForSelector('label.obtainments-list__item input[value=pickup]', {
           timeout: 2000,
         });
         console.log('Жмем самовывоз:', shopData.categoriesUrl);
-        await page.click('input[value=pickup].obtainments-list__control');
+        await page.click('label.obtainments-list__item input[value=pickup]');
 
         console.log('Ищем сохранить', shopData.categoriesUrl);
         await page.waitForSelector('button.rectangle-button.reset--button-styles.blue.lg.normal.wide', {
           timeout: 2000,
         });
         console.log('Жмем сохранить:', shopData.categoriesUrl);
-        await page.click('button.rectangle-button.reset--button-styles.blue.lg.normal.wide');
+        await page.click('button.rectangle-button reset--button-styles blue lg normal wide');
       } catch (e) {
         console.log('Ошибка при выборе магазина', shopData.categoriesUrl);
       }
 
+      // Нужно ли проверить возраст
+       try {
+
+           await page.waitForSelector('button.product-item-button__btn-cart.age-confirm', {
+               timeout: 2000,
+           });
+           await page.click('button.product-item-button__btn-cart.age-confirm');
+           console.log("Возраст подтвержден.")
+       } catch () {
+           console.log("Без подтверждения возроста.")
+       }
+
       // Определяем количество вин
-      const size = getFullQuantity((await (await page.$('span.search-page__total'))?.evaluate((el) => el.innerHTML)) || '0');
-      const categoryName = (await (await page.$('h1.catalog-title'))?.evaluate((el) => el.innerHTML)) || shopData.categoriesUrl;
+      const size = getFullQuantity((await (await page.$('span.heading-products-count subcategory-or-type__heading-count'))?.evaluate((el) => el.innerHTML)) || '0');
+      const categoryName = (await (await page.$('h1.subcategory-or-type__heading-title.catalog-heading.heading__h1 span'))?.evaluate((el) => el.innerHTML)) || shopData.categoriesUrl;
       let remaining2process = size;
       let pageCounter = startPage;
       console.log('Выбираем элементы, Всего:', size, shopData.categoriesUrl);
@@ -86,7 +98,7 @@ findCorrectVersionSite()
           await page.goto(`${shopData.shopUrl + shopData.categoriesUrl + shopData.descUrl}&page=${pageCounter}`, { waitUntil: 'networkidle2' });
         }
         console.timeLog(timerName, `Загружена страница: ${pageCounter}`, shopData.categoriesUrl);
-        const elem = await page.$$('div.catalog-list__wrapper div.catalog-item');
+        const elem = await page.$$('div.base-product-item.catalog-2-level-product.subcategory-or-type__products-item');
         remaining2process -= elem.length;
         for (let i = 0; i < elem.length; i++) {
           const data = elem[i];
