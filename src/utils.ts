@@ -46,7 +46,7 @@ export const findCorrectVersionSite = async (): Promise<puppeteer.Browser> => {
     await context.overridePermissions(shopData.shopUrl, ['notifications']);
     await page.goto(shopData.shopUrl, { waitUntil: 'networkidle2' });
     try {
-      await page.waitForSelector('span.header-main__content-main div.header-address', {
+      await page.waitForSelector('span.header-address__receive-method', {
         timeout: 3000,
       });
       count++;

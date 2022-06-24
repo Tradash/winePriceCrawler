@@ -66,7 +66,7 @@ findCorrectVersionSite()
           timeout: 2000,
         });
         console.log('Жмем сохранить:', shopData.categoriesUrl);
-        await page.click('button.rectangle-button reset--button-styles blue lg normal wide');
+        await page.click('button.rectangle-button.reset--button-styles.blue.lg.normal.wide');
       } catch (e) {
         console.log('Ошибка при выборе магазина', shopData.categoriesUrl);
       }
@@ -79,13 +79,14 @@ findCorrectVersionSite()
            });
            await page.click('button.product-item-button__btn-cart.age-confirm');
            console.log("Возраст подтвержден.")
-       } catch () {
+       } catch (e) {
            console.log("Без подтверждения возроста.")
        }
 
       // Определяем количество вин
-      const size = getFullQuantity((await (await page.$('span.heading-products-count subcategory-or-type__heading-count'))?.evaluate((el) => el.innerHTML)) || '0');
-      const categoryName = (await (await page.$('h1.subcategory-or-type__heading-title.catalog-heading.heading__h1 span'))?.evaluate((el) => el.innerHTML)) || shopData.categoriesUrl;
+      const ddd=  await page.$('span.heading-products-count.subcategory-or-type__heading-count');
+      const size = getFullQuantity((await (await page.$('div.heading-products-count.subcategory-or-type__heading-count'))?.evaluate((el) => el.innerHTML)) || '0');
+      const categoryName = ((await (await page.$('h1.subcategory-or-type__heading-title.catalog-heading.heading__h1 span'))?.evaluate((el) => el.innerHTML)) || shopData.categoriesUrl).trim();
       let remaining2process = size;
       let pageCounter = startPage;
       console.log('Выбираем элементы, Всего:', size, shopData.categoriesUrl);
@@ -100,58 +101,73 @@ findCorrectVersionSite()
         console.timeLog(timerName, `Загружена страница: ${pageCounter}`, shopData.categoriesUrl);
         const elem = await page.$$('div.base-product-item.catalog-2-level-product.subcategory-or-type__products-item');
         remaining2process -= elem.length;
+        const prodUrls:string[]= []
         for (let i = 0; i < elem.length; i++) {
           const data = elem[i];
-          // Получение ID
-          const id = await data.evaluate((el) => el.getAttribute('data-productid'));
-          if (!id) continue;
 
-          // let flag = false;
-          // if (id === '638859') flag = true;
+          // Определяем ссылку на детальное описание
 
-          // Получение наименования
-          const domName = await data.$('a.catalog-item_name');
-          if (!domName) continue;
-          const name = await domName.evaluate((el) => el.innerHTML);
-          // if (flag) console.warn(1, name);
-
-          // Ссылка на детализацию товара
-          const prodUrlNode = await data.$('a.catalog-item_name');
-          if (!prodUrlNode) continue;
-          const prodUrl = await prodUrlNode.evaluate((el) => el.getAttribute('href'));
-          // if (flag) console.warn(2, prodUrl);
-          // ссылка на картинку
-          const pictUrlNode = await data.$('div.catalog-item_defaut-image a.catalog-item_image');
-          if (!pictUrlNode) continue;
-          const pictUrl = await pictUrlNode.evaluate((el) => el.getAttribute('data-src') || '');
-          // if (flag) console.warn(3, pictUrl);
-          // Получение цен
-          const domPrice = await data.$$('div.catalog-item__hidden-content div.catalog-item_cost');
-          const prodPrice: any = [];
-          for (let j = 0; j < domPrice.length; j++) {
-            const priceRaw = await domPrice[j].$('div.catalog-item_price-lvl_current');
-            if (!priceRaw) continue;
-            const body = await priceRaw.evaluate((el) => el.innerHTML);
-            // if (flag) console.warn(4, j, body);
-            const price = findPrice(body);
-            const valueRaw = await domPrice[j].$('div.catalog-item_discount-lvl');
-            if (!valueRaw) continue;
-            const body01 = await valueRaw.evaluate((el) => el.innerHTML);
-            // if (flag) console.warn(5, j, body01);
-            const value = findValue(body01);
-            prodPrice.push({ price, value });
+           const aData = await data.$('a.base-product-photo__link.reset-link')
+          const  href = await aData?.getProperty("href")
+          if (href?._remoteObject.value) {
+            prodUrls.push(href._remoteObject.value)
           }
-          // if (flag) process.exit(1);
-          const wine = {
-            id,
-            categoryName: categoryName.trim(),
-            name: name.trim().replace('amp;', ''),
-            prodUrl: shopData.shopUrl + prodUrl,
-            pictUrl: pictUrl,
-            prices: prodPrice,
-          };
-          totalList.push(wine);
-          await wineModel.addPrice(wine);
+
+          // console.log(href?._remoteObject.value, categoryName) ;
+
+          //
+          //
+          //
+          // // Получение ID
+          // const id = await data.evaluate((el) => el.getAttribute('data-productid'));
+          // if (!id) continue;
+          //
+          // // let flag = false;
+          // // if (id === '638859') flag = true;
+          //
+          // // Получение наименования
+          // const domName = await data.$('a.catalog-item_name');
+          // if (!domName) continue;
+          // const name = await domName.evaluate((el) => el.innerHTML);
+          // // if (flag) console.warn(1, name);
+          //
+          // // Ссылка на детализацию товара
+          // const prodUrlNode = await data.$('a.catalog-item_name');
+          // if (!prodUrlNode) continue;
+          // const prodUrl = await prodUrlNode.evaluate((el) => el.getAttribute('href'));
+          // // if (flag) console.warn(2, prodUrl);
+          // // ссылка на картинку
+          // const pictUrlNode = await data.$('div.catalog-item_defaut-image a.catalog-item_image');
+          // if (!pictUrlNode) continue;
+          // const pictUrl = await pictUrlNode.evaluate((el) => el.getAttribute('data-src') || '');
+          // // if (flag) console.warn(3, pictUrl);
+          // // Получение цен
+          // const domPrice = await data.$$('div.catalog-item__hidden-content div.catalog-item_cost');
+          // const prodPrice: any = [];
+          // for (let j = 0; j < domPrice.length; j++) {
+          //   const priceRaw = await domPrice[j].$('div.catalog-item_price-lvl_current');
+          //   if (!priceRaw) continue;
+          //   const body = await priceRaw.evaluate((el) => el.innerHTML);
+          //   // if (flag) console.warn(4, j, body);
+          //   const price = findPrice(body);
+          //   const valueRaw = await domPrice[j].$('div.catalog-item_discount-lvl');
+          //   if (!valueRaw) continue;
+          //   const body01 = await valueRaw.evaluate((el) => el.innerHTML);
+          //   // if (flag) console.warn(5, j, body01);
+          //   const value = findValue(body01);
+          //   prodPrice.push({ price, value });
+          // }
+          // // if (flag) process.exit(1);
+          // const wine = {
+          //   id,
+          //   categoryName: categoryName.trim(),
+          //   name: name.trim().replace('amp;', ''),
+          //   prodUrl: shopData.shopUrl + prodUrl,
+          //   pictUrl: pictUrl,
+          //   prices: prodPrice,
+          // };
+          // totalList.push(wine);
+          // await wineModel.addPrice(wine);
         }
         console.timeLog(timerName, `Обработано страниц: ${pageCounter}`, `осталось обработать: ${remaining2process}`);
         await delay(Math.floor(Math.random() * 10000) + 1);
