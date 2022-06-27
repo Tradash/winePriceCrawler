@@ -9,7 +9,7 @@ export const findPrice = (s: string): number => {
 };
 
 export const findValue = (s: string): string => {
-  const regGetValue = /^\D*(?<value>\d+\s((шт)|(Па)|(уп)|(кг)|(бт))).*$/gm;
+  const regGetValue = /^\s*от\s*(?<value>\d+\s((шт)|(Па)|(уп)|(кг)|(бт)))\s*$/gm;
   const m = regGetValue.exec(s);
   if (m && m.groups) return m.groups.value.trim();
   return 'Не указан';
