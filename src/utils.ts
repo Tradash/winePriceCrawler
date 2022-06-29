@@ -1,5 +1,5 @@
 import puppeteer from 'puppeteer';
-import {isHeadless, shopData} from './config';
+import { isHeadless, shopData } from './config';
 
 export const findPrice = (s: string): number => {
   const regGetPrice = new RegExp('(?<price>(?:\\d+\\s)?\\d+).*$', 'gm');
@@ -51,12 +51,12 @@ export const findCorrectVersionSite = async (): Promise<puppeteer.Browser> => {
       });
       count++;
       console.log('Корректная версия сайта, сделано попыток', count);
-        await page.close();
-        count = 100;
+      await page.close();
+      count = 100;
     } catch (e) {
-      console.log('Некорректная версия сайта, сделано попыток', count+1);
-        await page.close();
-        await browser.close();
+      console.log('Некорректная версия сайта, сделано попыток', count + 1);
+      await page.close();
+      await browser.close();
     }
   }
 
@@ -66,4 +66,22 @@ export const findCorrectVersionSite = async (): Promise<puppeteer.Browser> => {
   }
   // @ts-ignore
   return browser as puppeteer.Browser;
+};
+
+export const toHHMMSS = (x: number) => {
+  const sec_num = Math.floor(x / 1000); // don't forget the second param
+  let hours = Math.floor(sec_num / 3600).toString();
+  let minutes = Math.floor((sec_num - Number(hours) * 3600) / 60).toString();
+  let seconds = (sec_num - Number(hours) * 3600 - Number(minutes) * 60).toString();
+
+  if (hours.length < 2) {
+    hours = '0' + hours;
+  }
+  if (minutes.length < 2) {
+    minutes = '0' + minutes;
+  }
+  if (seconds.length < 2) {
+    seconds = '0' + seconds;
+  }
+  return hours + ':' + minutes + ':' + seconds;
 };
