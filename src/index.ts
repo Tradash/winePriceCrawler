@@ -7,7 +7,7 @@ let countWorker = 0;
 
 interface IShopData {
   categories: string;
-  isActive: boolean;
+  inWork: boolean;
   isReady: boolean;
   repeatCounter: number;
 }
@@ -15,24 +15,24 @@ interface IShopData {
 const data: IShopData[] = shopData.categories.map((x) => {
   return {
     categories: x,
-    isActive: false,
+    inWork: false,
     isReady: false,
     repeatCounter: 0,
   };
 });
 
-const findNext2work = (data: IShopData[]): number => {
+export const findNext2work = (data: IShopData[]): number => {
   for (let i = 0; i < data.length; i++) {
-    if (!data[i].isActive && !data[i].isReady && data[i].repeatCounter < maxRepeat) {
+    if (!data[i].inWork && !data[i].isReady && data[i].repeatCounter < maxRepeat) {
       return i;
     }
   }
   return -1;
 };
 
-const hasActive = (data: IShopData[]): boolean => {
+export const hasActive = (data: IShopData[] ): boolean => {
   for (let i = 0; i < data.length; i++) {
-    if (data[i].isActive) {
+    if (data[i].inWork) {
       return true;
     }
   }
@@ -43,12 +43,12 @@ if (process.argv.length === 2) {
   console.log('Запущено приложение по парсингу цен');
   db.clearDb(0).then(async () => {
     let i = 0;
-    while (i != -1 || hasActive(data)) {
+    while (i !== -1 || hasActive(data)) {
       if (countWorker < maxWorker) {
         i = findNext2work(data);
-        if (i != -1) {
+        if (i !== -1) {
           countWorker++;
-          data[i].isActive = true;
+          data[i].inWork = true;
           data[i].repeatCounter++;
           startWorker({
             shopUrl: shopData.shopUrl,
@@ -57,12 +57,13 @@ if (process.argv.length === 2) {
           })
             .then(() => {
               countWorker--;
-              data[i].isActive = false;
+              data[i].inWork = false;
               data[i].isReady = true;
             })
-            .catch(() => {
+            .catch((e) => {
+              console.log("Ошибка: ", e)
               countWorker--;
-              data[i].isActive = false;
+              data[i].inWork = false;
               data[i].isReady = false;
             });
         }

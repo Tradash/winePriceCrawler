@@ -1,11 +1,11 @@
 import * as process from 'process';
 import threads from 'worker_threads';
-import { ProductModel } from '../models/productModel';
-import { db } from '../db/dbController';
-import { delay, findCorrectVersionSite, findValue, getFullQuantity, toHHMMSS } from '../utils';
-import { IProductList } from '../types';
-import { maxRepeat } from '../config';
-import { Browser } from 'puppeteer';
+import {ProductModel} from '../models/productModel';
+import {db} from '../db/dbController';
+import {delay, findCorrectVersionSite, findValue, get2work, getFullQuantity, toHHMMSS} from '../utils';
+import {maxPage, maxRepeat} from '../config';
+import {Browser} from 'puppeteer';
+import {IUData} from "../types";
 
 const shopData = {
   shopUrl: threads.workerData.shopUrl,
@@ -51,8 +51,9 @@ const getData = async (browser: Browser, url: string, categoryName: string): Pro
     }
   } catch (e) {}
 
+
+    // Определение артикула
   const artElem = await page.$('span.product__article');
-  // Определение артикула
   const artData = (await artElem?.evaluate((el) => el.innerHTML)) || '';
   const art = /^\s*Aртикул:\s*(?<art>\d+)\s*$/.exec(artData);
   let id = '';
@@ -99,22 +100,6 @@ const getData = async (browser: Browser, url: string, categoryName: string): Pro
   }
   await page.close();
   return true;
-};
-
-interface IUData {
-  url: string;
-  isReady: boolean;
-  inWork: boolean;
-  repeatCounter: number;
-}
-
-const get2work = (data: IUData[]): number => {
-  for (let i = 0; i < data.length; i++) {
-    if (!data[i].isReady && data[i].repeatCounter < maxRepeat && !data[i].inWork) {
-      return i;
-    }
-  }
-  return -1;
 };
 
 findCorrectVersionSite()
@@ -187,7 +172,7 @@ findCorrectVersionSite()
       let remaining2process = size;
       let pageCounter = startPage;
       console.log('Выбираем элементы, Всего:', size, shopData.categoriesUrl);
-      const totalList: IProductList[] = [];
+      // const totalList: IProductList[] = [];
       console.timeLog(timerName, 'Начата обработка страниц', shopData.categoriesUrl);
       const prodUrls: string[] = [];
       while (remaining2process > 0) {
@@ -217,7 +202,7 @@ findCorrectVersionSite()
 
       const startTimeGlobal = new Date().getTime();
 
-      const maxPage = 8;
+
 
       const maxRepeat = 3;
 

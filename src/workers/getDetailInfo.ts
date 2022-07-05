@@ -1,6 +1,9 @@
 import { ProductModel } from '../models/productModel';
 import { db } from '../db/dbController';
-import { delay, findCorrectVersionSite } from '../utils';
+import { delay, findCorrectVersionSite, get2work, toHHMMSS } from '../utils';
+import { maxPage, maxRepeat } from '../config';
+import { Browser } from 'puppeteer';
+import { IUSubData } from '../types';
 
 const timerName = `start:GetExtInfo`;
 
@@ -8,62 +11,130 @@ console.time(timerName);
 
 const wineModel = new ProductModel(db);
 
-wineModel.findProducts4GetAdditionalSpec(1000).then((data) => {
-  console.timeLog(timerName, `Найдено продуктов без спецификации:${data.length}`);
-  findCorrectVersionSite()
-    .then(async (browser) => {
-      const context = browser.defaultBrowserContext();
-      let page = await browser.newPage();
-      await context.overridePermissions(`https://online.metro-cc.ru/`, ['notifications']);
-      await page.goto(`https://online.metro-cc.ru/`, { waitUntil: 'networkidle2' });
+const getData = async (browser: Browser, url: string, id: number): Promise<boolean> => {
+  const page = await browser.newPage();
+  let repeatCounter = 0;
+  while (repeatCounter < maxRepeat) {
+    try {
+      await page.goto(url, { waitUntil: 'networkidle2' });
+      repeatCounter = maxRepeat + 10;
+    } catch (e) {
+      console.log(`Ошибка при загрузки страницы, повтор (${repeatCounter}/${maxRepeat})`, url);
+      repeatCounter++;
+    }
+  }
 
-      for (let i = 0; i < data.length; i++) {
-        if (i == 0) {
-          await context.overridePermissions(data[i].urlDescription, ['notifications']);
-          await page.goto(data[i].urlDescription, { waitUntil: 'networkidle2' });
-          try {
-            await page.waitForSelector('div.header__tradecenter_question-buttons button.header__tradecenter_question-btn.header__tradecenter_question-btn--active', {
-              timeout: 5000,
-            });
-            await page.click('div.header__tradecenter_question-buttons button.header__tradecenter_question-btn.header__tradecenter_question-btn--active');
-            await page.waitForSelector('div.warning__block a.warning__button', {
-              timeout: 5000,
-            });
-            await page.click('div.warning__block a.warning__button');
-          } catch (e) {
-            console.log('Ошибка при подтверждении города/возраста', e);
-          }
-        } else {
-          await page.goto(data[i].urlDescription, { waitUntil: 'networkidle2' });
-        }
-        const brandData = await page.$('div.product-page__tablet-brand p span');
-        if (!brandData) continue;
-        const brand = await brandData.evaluate((el) => el.innerHTML);
+  if (repeatCounter < 10) {
+    await page.close();
+    return false;
+  }
+  try {
+    const age = await page.$(`'button.rectangle-button.reset--button-styles.confirm-age__apply-btn.blue.lg.normal`);
+    if (age) {
+      await page.waitForSelector('button.rectangle-button.reset--button-styles.confirm-age__apply-btn.blue.lg.normal', {
+        timeout: 2000,
+      });
+      await page.click('button.rectangle-button.reset--button-styles.confirm-age__apply-btn.blue.lg.normal');
+      console.log('Подтверждение возроста выполнено.');
+    }
+  } catch (e) {}
 
-        const elems = await page.$$('div.product-page__fullspec-line');
-        const fullSpec: any = {};
-        for (let i = 0; i < elems.length; i++) {
-          const elem = elems[i];
-          const nameSpec = await (await elem.$('div.product-page__fullspec-line p'))?.evaluate((el) => el.innerHTML);
-          const value = await (await elem.$('div.product-page__fullspec-line span'))?.evaluate((el) => el.innerHTML);
-          if (nameSpec && value) fullSpec[nameSpec] = value;
-        }
-        await wineModel.updateProductAdditional({
-          id: data[i].id,
-          country: fullSpec['Страна'] || 'Не указана',
-          brand: brand.replace('amp;', '') || 'Не указан',
-          bodyJson: JSON.stringify(fullSpec) || 'Не указан',
-        });
-        await delay(Math.floor(Math.random() * 5000) + 1);
-        console.timeLog(timerName, `Обработано: ${i + 1}, Осталось: ${data.length - i - 1}`);
+  // Поиск бренда
+  const elems = await page.$$('div.product__additional section.product__specification.additional-block li.attrs-list__item');
+  const data2save: any = { detail: null };
+  for (let i = 0; i < elems.length; i++) {
+    const nameParam = await (await elems[i].$('li.attrs-list__item div.left-col span.label'))?.evaluate((el) => el.innerHTML);
+    const dataParam = await (await elems[i].$('span.text'))?.evaluate((el) => el.innerHTML);
+    if (nameParam && dataParam) {
+      if (nameParam === 'Бренд') {
+        data2save.brand = dataParam;
       }
+      if (nameParam === 'Страна-производитель') {
+        data2save.country = dataParam;
+      }
+      if (nameParam === 'Регион' && dataParam === 'Крым') {
+        data2save.country = dataParam;
+      }
+
+      if (!data2save.detail) {
+        data2save.detail = {
+          [nameParam]: dataParam,
+        };
+      }
+
+      data2save.detail[nameParam] = dataParam;
+    }
+  }
+
+  if (data2save.brand && data2save.country) {
+    await wineModel.updateProductAdditional({
+      id: id,
+      country: data2save.country,
+      brand: data2save.brand,
+      bodyJson: JSON.stringify(data2save.detail),
+    });
+  }
+  await page.close();
+  return true;
+};
+
+const startTimeGlobal = new Date().getTime();
+
+findCorrectVersionSite().then(async (browser) => {
+  wineModel
+    .findProducts4GetAdditionalSpec(1000)
+    .then(async (data2work) => {
+      const data: IUSubData[] = data2work.map((x) => {
+        return {
+          id: x.id,
+          url: x.urlDescription,
+          inWork: false,
+          isReady: false,
+          repeatCounter: 0,
+        };
+      });
+      const startTimeLocal = new Date().getTime();
+      let isWork = true;
+      let active = 0;
+      let succ = 0;
+      while (isWork) {
+        const i = get2work(data);
+
+        if (i == -1) {
+          isWork = false;
+        } else {
+          if (active < maxPage) {
+            data[i].inWork = true;
+            data[i].repeatCounter++;
+            active++;
+            const startTime = new Date().getTime();
+            getData(browser, data[i].url, data[i].id)
+              .then((x) => {
+                active--;
+                if (x) {
+                  succ++;
+                  data[i].isReady = true;
+                  console.log(
+                    `Страница ${data[i].url} обработана за ${toHHMMSS(new Date().getTime() - startTime)}, ${succ}/${data.length}, Осталось времени: ${toHHMMSS(
+                      ((new Date().getTime() - startTimeLocal) / succ) * (data.length - succ)
+                    )}`
+                  );
+                }
+                data[i].inWork = false;
+              })
+              .catch((e) => {
+                active--;
+                data[i].inWork = false;
+                console.warn(`Ошибка при обработке ${data[i].url}, Попытка ${data[i].repeatCounter}/${maxRepeat}`, e.message);
+              });
+          }
+        }
+        await delay(1000);
+      }
+    })
+    .finally(async () => {
+      await delay(5000);
+      console.log(`Обработка завершена за обработана за ${toHHMMSS(new Date().getTime() - startTimeGlobal)}`);
       await browser.close();
-    })
-    .catch((e) => {
-      console.log('Ошибка при обработке', e);
-    })
-    .finally(() => {
-      db.closeConnection();
-      console.timeEnd(timerName);
     });
 });

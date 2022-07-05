@@ -1,5 +1,6 @@
 import puppeteer from 'puppeteer';
-import { isHeadless, shopData } from './config';
+import {isHeadless, maxRepeat, shopData} from './config';
+import {IUData, IUSubData} from "./types";
 
 export const findPrice = (s: string): number => {
   const regGetPrice = new RegExp('(?<price>(?:\\d+\\s)?\\d+).*$', 'gm');
@@ -84,4 +85,12 @@ export const toHHMMSS = (x: number) => {
     seconds = '0' + seconds;
   }
   return hours + ':' + minutes + ':' + seconds;
+};
+export const get2work = (data: IUData[] | IUSubData[]): number => {
+    for (let i = 0; i < data.length; i++) {
+        if (!data[i].isReady && data[i].repeatCounter < maxRepeat && !data[i].inWork) {
+            return i;
+        }
+    }
+    return -1;
 };
