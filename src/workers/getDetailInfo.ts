@@ -1,9 +1,11 @@
 import { ProductModel } from '../models/productModel';
 import { db } from '../db/dbController';
-import { delay, findCorrectVersionSite, get2work, toHHMMSS } from '../utils';
-import { maxPage, maxRepeat } from '../config';
-import { Browser } from 'puppeteer';
+import { delay } from '../utils/utils';
+import { maxRepeat } from '../config';
 import { IUSubData } from '../types';
+import { findCorrectVersionSite } from '../utils/findCorrectVersionSite';
+import { toHHMMSS } from '../utils/toHHMMSS';
+import { handler, THandler } from '../utils/handler';
 
 const timerName = `start:GetExtInfo`;
 
@@ -11,15 +13,15 @@ console.time(timerName);
 
 const wineModel = new ProductModel(db);
 
-const getData = async (browser: Browser, url: string, id: number): Promise<boolean> => {
+const getData: THandler = async (browser, data): Promise<boolean> => {
   const page = await browser.newPage();
   let repeatCounter = 0;
   while (repeatCounter < maxRepeat) {
     try {
-      await page.goto(url, { waitUntil: 'networkidle2' });
+      await page.goto(data.url, { waitUntil: 'networkidle2' });
       repeatCounter = maxRepeat + 10;
     } catch (e) {
-      console.log(`Ошибка при загрузки страницы, повтор (${repeatCounter}/${maxRepeat})`, url);
+      console.log(`Ошибка при загрузки страницы, повтор (${repeatCounter}/${maxRepeat})`, data.url);
       repeatCounter++;
     }
   }
@@ -67,12 +69,14 @@ const getData = async (browser: Browser, url: string, id: number): Promise<boole
   }
 
   if (data2save.brand && data2save.country) {
-    await wineModel.updateProductAdditional({
-      id: id,
-      country: data2save.country,
-      brand: data2save.brand,
-      bodyJson: JSON.stringify(data2save.detail),
-    });
+    if ('id' in data) {
+      await wineModel.updateProductAdditional({
+        id: data.id,
+        country: data2save.country,
+        brand: data2save.brand,
+        bodyJson: JSON.stringify(data2save.detail),
+      });
+    }
   }
   await page.close();
   return true;
@@ -93,44 +97,13 @@ findCorrectVersionSite().then(async (browser) => {
           repeatCounter: 0,
         };
       });
-      const startTimeLocal = new Date().getTime();
-      let isWork = true;
-      let active = 0;
-      let succ = 0;
-      while (isWork) {
-        const i = get2work(data);
 
-        if (i == -1) {
-          isWork = false;
-        } else {
-          if (active < maxPage) {
-            data[i].inWork = true;
-            data[i].repeatCounter++;
-            active++;
-            const startTime = new Date().getTime();
-            getData(browser, data[i].url, data[i].id)
-              .then((x) => {
-                active--;
-                if (x) {
-                  succ++;
-                  data[i].isReady = true;
-                  console.log(
-                    `Страница ${data[i].url} обработана за ${toHHMMSS(new Date().getTime() - startTime)}, ${succ}/${data.length}, Осталось времени: ${toHHMMSS(
-                      ((new Date().getTime() - startTimeLocal) / succ) * (data.length - succ)
-                    )}`
-                  );
-                }
-                data[i].inWork = false;
-              })
-              .catch((e) => {
-                active--;
-                data[i].inWork = false;
-                console.warn(`Ошибка при обработке ${data[i].url}, Попытка ${data[i].repeatCounter}/${maxRepeat}`, e.message);
-              });
-          }
-        }
-        await delay(1000);
-      }
+      const succ = handler(browser, data, getData, '');
+
+      console.log(`Всего обработано... ${data.length} Успешно: ${succ}. Режим ожидания завершения активных операций 10 сек`);
+      await delay(10000);
+      console.log(`Всего обработано... ${data.length} Успешно: ${succ}`);
+      await browser.close();
     })
     .finally(async () => {
       await delay(5000);

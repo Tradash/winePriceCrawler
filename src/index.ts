@@ -1,7 +1,7 @@
 import {startWorker} from './workers/initWorkers';
 import {db} from './db/dbController';
 import {maxRepeat, maxWorker, shopData} from './config';
-import {delay} from './utils';
+import {delay} from './utils/utils';
 
 let countWorker = 0;
 
