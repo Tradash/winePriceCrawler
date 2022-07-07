@@ -47,24 +47,25 @@ if (process.argv.length === 2) {
       if (countWorker < maxWorker) {
         i = findNext2work(data);
         if (i !== -1) {
+          const ind=i;
           countWorker++;
-          data[i].inWork = true;
-          data[i].repeatCounter++;
+          data[ind].inWork = true;
+          data[ind].repeatCounter++;
           startWorker({
             shopUrl: shopData.shopUrl,
-            categoriesUrl: shopData.categories[i],
+            categoriesUrl: shopData.categories[ind],
             descUrl: shopData.descUrl,
           })
             .then(() => {
               countWorker--;
-              data[i].inWork = false;
-              data[i].isReady = true;
+              data[ind].inWork = false;
+              data[ind].isReady = true;
             })
             .catch((e) => {
               console.log("Ошибка: ", e)
               countWorker--;
-              data[i].inWork = false;
-              data[i].isReady = false;
+              data[ind].inWork = false;
+              data[ind].isReady = false;
             });
         }
       }
