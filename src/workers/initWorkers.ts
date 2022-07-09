@@ -9,10 +9,16 @@ export interface IWorkerData {
 }
 
 export const startWorker = (wData: IWorkerData | null) => {
-  if (!wData) workerFile = path.join(__dirname, './getDetailInfo.js');
-  const thr = new threads.Worker(workerFile, { workerData: wData });
-  thr.on('error', (err) => {
-    console.error('Ошибка в воркере', wData, err);
+  return new Promise((resolve, reject) => {
+    if (!wData) workerFile = path.join(__dirname, './getDetailInfo.js');
+    const thr = new threads.Worker(workerFile, { workerData: wData });
+    thr.on('error', (err) => {
+      console.error('Ошибка в воркере', wData, err);
+      reject(1);
+    });
+    thr.on('exit', (code) => {
+      console.log('Воркер завершил работу с кодом', code);
+      resolve(1);
+    });
   });
-  thr.on('exit', (code) => console.log('Воркер завершил работу с кодом', code));
 };
