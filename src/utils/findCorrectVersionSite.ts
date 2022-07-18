@@ -2,8 +2,8 @@ import puppeteer from "puppeteer";
 import {isHeadless, shopData} from "../config";
 
 export const findCorrectVersionSite = async (): Promise<puppeteer.Browser> => {
-    const width = 1920;
-    const height = 1080;
+    const width = 800;
+    const height = 600;
     let count = 0;
     let browser: puppeteer.Browser;
     while (count < 30) {
