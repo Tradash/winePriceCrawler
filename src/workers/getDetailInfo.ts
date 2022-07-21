@@ -6,6 +6,7 @@ import { IUSubData } from '../types';
 import { findCorrectVersionSite } from '../utils/findCorrectVersionSite';
 import { toHHMMSS } from '../utils/toHHMMSS';
 import { handler, THandler } from '../utils/handler';
+import process from 'process';
 
 const timerName = `start:GetExtInfo`;
 
@@ -98,16 +99,19 @@ findCorrectVersionSite().then(async (browser) => {
         };
       });
 
-      const succ = handler(browser, data, getData, '');
+      const succ = await handler(browser, data, getData, '');
 
       console.log(`Всего обработано... ${data.length} Успешно: ${succ}. Режим ожидания завершения активных операций 10 сек`);
       await delay(10000);
       console.log(`Всего обработано... ${data.length} Успешно: ${succ}`);
       await browser.close();
     })
+    .catch((e) => {
+      console.log('Ошибка', e);
+    })
     .finally(async () => {
       await delay(5000);
-      console.log(`Обработка завершена за обработана за ${toHHMMSS(new Date().getTime() - startTimeGlobal)}`);
-      await browser.close();
+      console.log(`Обработка завершена за за ${toHHMMSS(new Date().getTime() - startTimeGlobal)}`);
+      process.exit(0);
     });
 });

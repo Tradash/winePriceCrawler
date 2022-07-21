@@ -4,11 +4,11 @@ export const shopData = {
   shopUrl: 'https://online.metro-cc.ru',
   descUrl: '?order=price_desc',
   categories: [
-    '/category/alkogolnaya-produkciya/shampanskoe-igristye-vina',
+     '/category/alkogolnaya-produkciya/shampanskoe-igristye-vina',
     '/category/myasnye/myaso/govyadina',
      '/category/chaj-kofe-kakao/kofe-zernovoj',
     '/category/alkogolnaya-produkciya/vino',
   ],
 };
 export const maxWorker = 1; // Количество максимальных параллельных потоков (более 2-х комп начинает плохо себя чувствовать)
-export const maxPage = 4; // Максимальное количество одновременно открытых страниц
+export const maxPage = 5; // Максимальное количество одновременно открытых страниц

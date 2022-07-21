@@ -1,7 +1,7 @@
-import {startWorker} from './workers/initWorkers';
-import {db} from './db/dbController';
-import {maxRepeat, maxWorker, shopData} from './config';
-import {delay} from './utils/utils';
+import { startWorker } from './workers/initWorkers';
+import { db } from './db/dbController';
+import { maxRepeat, maxWorker, shopData } from './config';
+import { delay } from './utils/utils';
 
 let countWorker = 0;
 
@@ -30,7 +30,7 @@ export const findNext2work = (data: IShopData[]): number => {
   return -1;
 };
 
-export const hasActive = (data: IShopData[] ): boolean => {
+export const hasActive = (data: IShopData[]): boolean => {
   for (let i = 0; i < data.length; i++) {
     if (data[i].inWork) {
       return true;
@@ -47,7 +47,7 @@ if (process.argv.length === 2) {
       if (countWorker < maxWorker) {
         i = findNext2work(data);
         if (i !== -1) {
-          const ind=i;
+          const ind = i;
           countWorker++;
           data[ind].inWork = true;
           data[ind].repeatCounter++;
@@ -62,7 +62,7 @@ if (process.argv.length === 2) {
               data[ind].isReady = true;
             })
             .catch((e) => {
-              console.log("Ошибка: ", e)
+              console.log('Ошибка: ', e);
               countWorker--;
               data[ind].inWork = false;
               data[ind].isReady = false;
@@ -75,5 +75,7 @@ if (process.argv.length === 2) {
   });
 } else {
   console.log('Запущено приложение по парсингу цен, получение дополнительной информации о продукте');
-  startWorker(null);
+  startWorker(null).finally(() => {
+    db.closeConnection();
+  });
 }
