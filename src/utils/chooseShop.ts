@@ -2,6 +2,18 @@ import { Page } from 'puppeteer';
 
 export const chooseShop = async (page: Page, url: string) => {
   try {
+
+    console.log("Проверка региона");
+      try {
+          await page.waitForSelector('div.region-confirm__actions', {
+              timeout: 2000,
+          });
+          await page.click('button.rectangle-button.reset--button-styles.action-button.apply-button.blue.lg.normal.wide');
+          console.log("Регион выбран");
+      }
+      catch (e) {
+          console.log("Без проверки региона")
+      }
     console.log('Выбираю магазин', url);
     await page.waitForSelector('span.header-address__receive-address', {
       timeout: 2000,
