@@ -1,5 +1,5 @@
-import {maxRepeat} from '../config';
-import {IExtHandlerData} from "../types";
+import { maxRepeat } from '../config';
+import { IExtHandlerData } from '../types';
 
 export const findValue = (s: string): string => {
   const regGetValue = /^\s*от\s*(?<value>\d+\s((шт)|(Па)|(уп)|(кг)|(бт)))\s*$/gm;
@@ -24,10 +24,10 @@ export const delay = async (delayInms: number): Promise<number> => {
 };
 
 export const getId2Processing = <T extends IExtHandlerData>(data: T[]): number => {
-    for (let i = 0; i < data.length; i++) {
-        if (!data[i].isReady && data[i].repeatCounter < maxRepeat && !data[i].inWork) {
-            return i;
-        }
+  for (let i = 0; i < data.length; i++) {
+    if (!data[i].isReady && data[i].repeatCounter < maxRepeat && !data[i].inWork) {
+      return i;
     }
-    return -1;
+  }
+  return -1;
 };
