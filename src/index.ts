@@ -1,18 +1,18 @@
 import { startWorker } from './workers/initWorkers';
 import { db } from './db/dbController';
-import { maxRepeat, maxWorker, shopData } from './config';
+import {maxRepeat, maxWorker, shopData, TShopDetail} from './config';
 import { delay } from './utils/utils';
 
 let countWorker = 0;
 
 interface IShopData {
-  categories: string;
+  categories: TShopDetail;
   inWork: boolean;
   isReady: boolean;
   repeatCounter: number;
 }
 
-const data: IShopData[] = shopData.categories.map((x) => {
+const data: IShopData[] = shopData.categories.filter(x=>x.active).map((x) => {
   return {
     categories: x,
     inWork: false,
@@ -53,7 +53,7 @@ if (process.argv.length === 2) {
           data[ind].repeatCounter++;
           startWorker({
             shopUrl: shopData.shopUrl,
-            categoriesUrl: shopData.categories[ind],
+            categories: data[ind].categories,
             descUrl: shopData.descUrl,
           })
             .then(() => {

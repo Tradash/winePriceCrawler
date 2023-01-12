@@ -1,10 +1,11 @@
 import threads from 'worker_threads';
 import path from 'path';
+import {TShopDetail} from "../config";
 let workerFile = path.join(__dirname, './crawler.js');
 
 export interface IWorkerData {
   shopUrl: string;
-  categoriesUrl: string;
+  categories: TShopDetail;
   descUrl: string;
 }
 

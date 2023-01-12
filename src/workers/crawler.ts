@@ -3,23 +3,27 @@ import threads from 'worker_threads';
 import { ProductModel } from '../models/productModel';
 import { db } from '../db/dbController';
 import { delay, findValue, getFullQuantity } from '../utils/utils';
-import { maxRepeat } from '../config';
+import { maxRepeat, TShopDetail } from '../config';
 import { IUData } from '../types';
 import { findCorrectVersionSite } from '../utils/findCorrectVersionSite';
 import { chooseShop } from '../utils/chooseShop';
 import { handler, THandler } from '../utils/handler';
 
-const shopData = {
+const shopData: {
+  shopUrl: string;
+  descUrl: string;
+  categories: TShopDetail;
+} = {
   shopUrl: threads.workerData.shopUrl,
   descUrl: threads.workerData.descUrl,
-  categoriesUrl: threads.workerData.categoriesUrl,
+  categories: threads.workerData.categories,
 };
 
-console.log(`Запущен воркер по парсингу цен ${shopData.categoriesUrl}`, new Date().getTime());
+console.log(`Запущен воркер по парсингу цен ${shopData.categories.url}`, new Date().getTime());
 
 const startPage = 0;
 
-const timerName = `start:${shopData.categoriesUrl}`;
+const timerName = `start:${shopData.categories.url}`;
 
 console.time(timerName);
 
@@ -107,12 +111,12 @@ findCorrectVersionSite()
   .then(async (browser) => {
     const context = browser.defaultBrowserContext();
     let page = await browser.newPage();
-    await context.overridePermissions(shopData.shopUrl + shopData.categoriesUrl + shopData.descUrl, ['notifications']);
-    console.log('Переход на страницу', shopData.categoriesUrl);
-    await page.goto(shopData.shopUrl + shopData.categoriesUrl + shopData.descUrl, { waitUntil: 'networkidle2' });
+    await context.overridePermissions(shopData.shopUrl + shopData.categories.url + shopData.descUrl, ['notifications']);
+    console.log('Переход на страницу', shopData.categories.url);
+    await page.goto(shopData.shopUrl + shopData.categories.url + shopData.descUrl, { waitUntil: 'networkidle2' });
 
     // Выбираем магазин
-    await chooseShop(page, shopData.categoriesUrl);
+    await chooseShop(page, shopData.categories.url);
 
     // Нужно ли проверить возраст
     try {
@@ -134,28 +138,62 @@ findCorrectVersionSite()
     }
 
     const categoryName = (
-      (await (await page.$('h1.subcategory-or-type__heading-title.catalog-heading.heading__h1 span'))?.evaluate((el) => el.innerHTML)) || shopData.categoriesUrl
+      (await (await page.$('h1.subcategory-or-type__heading-title.catalog-heading.heading__h1 span'))?.evaluate((el) => el.innerHTML)) || shopData.categories.url
     ).trim();
     let remaining2process = size;
     let pageCounter = startPage;
-    console.log('Выбираем элементы, Всего:', size, shopData.categoriesUrl);
-    console.timeLog(timerName, 'Начата обработка страниц', shopData.categoriesUrl);
+    console.log('Выбираем элементы, Всего:', size, shopData.categories.url);
+    console.timeLog(timerName, 'Начата обработка страниц', shopData.categories.url);
     const prodUrls: string[] = [];
     while (remaining2process > 0) {
       pageCounter++;
       if (pageCounter !== 1) {
-        await page.goto(`${shopData.shopUrl + shopData.categoriesUrl + shopData.descUrl}&page=${pageCounter}`, { waitUntil: 'networkidle2' });
+        let successful = false;
+        let counter = 10;
+        while (!successful && counter !== 0) {
+          counter--;
+          try {
+            await page.goto(`${shopData.shopUrl + shopData.categories.url + shopData.descUrl}&page=${pageCounter}`, { waitUntil: 'networkidle2' });
+            successful = true
+          } catch (e) {
+            console.warn('Ошибка при переходе на страницу', e);
+          }
+        }
+        if (!successful) {
+          console.warn('Выполнено 10 неудачных попыток перейти на станицу');
+          process.exit(1);
+        }
+      } else {
+        const checkAge = await page.$$(
+          'button.simple-button.reset-button.catalog-2-level-product-card__button.catalog-2-level-product-card__button--confirm.style--catalog-2-level-product-card.not-in-cart'
+        );
+        if (checkAge.length > 0) {
+          console.log('Нужно подтверждение возраста');
+          await checkAge[0].click();
+          console.log('Подтверждение возраста выполнено');
+        }
       }
-      console.timeLog(timerName, `Загружена страница: ${pageCounter}`, shopData.categoriesUrl);
-      const elem = await page.$$('div.base-product-item.catalog-2-level-product.subcategory-or-type__products-item');
+      //simple-button reset-button catalog-2-level-product-card__button catalog-2-level-product-card__button--confirm style--catalog-2-level-product-card not-in-cart
+      //simple-button reset-button catalog-2-level-product-card__button catalog-2-level-product-card__button--reserve style--catalog-2-level-product-card not-in-cart
+      console.timeLog(timerName, `Загружена страница: ${pageCounter}`, shopData.categories.url);
+
+      // await delay(5000)
+      // const elem = await page.$$('div.base-product-item.catalog-2-level-product.subcategory-or-type__products-item');
+      // const elem = await page.$$('div.catalog-2-level-product-card.product-card.subcategory-or-type__products-item');
+      const elem = await page.$$(shopData.categories.prodElem);
+      if (elem.length === 0) {
+        console.error('Ошибка при определении количества товаров на странице!!!!!-1');
+        process.exit(1);
+      }
       remaining2process -= elem.length;
 
       for (let i = 0; i < elem.length; i++) {
         const data = elem[i];
 
         // Определяем ссылку на детальное описание
-
-        const aData = await data.$('a.base-product-photo__link.reset-link');
+        // const aData = await data.$('a.product-card-photo__link.reset-link');
+        // const aData = await data.$('a.base-product-photo__link.reset-link');
+        const aData = await data.$(shopData.categories.prodDetail);
         const href = await aData?.getProperty('href');
         if (href?._remoteObject.value) {
           prodUrls.push(href._remoteObject.value);
@@ -176,16 +214,16 @@ findCorrectVersionSite()
 
     const succ = await handler(browser, uData, getData, categoryName);
 
-    console.log(`Всего обработано... ${uData.length} Успешно: ${succ}. Режим ожидания завершения активных операций 10 сек`, shopData.categoriesUrl);
+    console.log(`Всего обработано... ${uData.length} Успешно: ${succ}. Режим ожидания завершения активных операций 10 сек`, shopData.categories.url);
     await delay(10000);
-    console.log(`Всего обработано... ${uData.length} Успешно: ${succ}`, shopData.categoriesUrl);
+    console.log(`Всего обработано... ${uData.length} Успешно: ${succ}`, shopData.categories.url);
     await browser.close();
   })
   .catch((e) => {
-    console.log('Ошибка', e, shopData.categoriesUrl);
+    console.log('Ошибка', e, shopData.categories.url);
   })
   .finally(() => {
     console.timeEnd(timerName);
-    console.log('Завершена обработка', shopData.categoriesUrl);
+    console.log('Завершена обработка', shopData.categories.url);
     process.exit(0);
   });
