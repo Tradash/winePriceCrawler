@@ -30,7 +30,7 @@ export const shopData: TShopType = {
       active: true,
     },
     {
-      url: '/category/chaj-kofe-kakao/kofe-zernovoj',
+      url: '/category/chaj-kofe-kakao/kofe/kofe-v-zernakh',
       prodElem: 'div.catalog-2-level-product-card.product-card.subcategory-or-type__products-item',
       prodDetail: 'a.product-card-photo__link.reset-link',
       active: true,

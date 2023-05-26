@@ -2,7 +2,7 @@ import * as process from 'process';
 import threads from 'worker_threads';
 import { ProductModel } from '../models/productModel';
 import { db } from '../db/dbController';
-import { delay, findValue, getFullQuantity } from '../utils/utils';
+import { delay, getFullQuantity } from '../utils/utils';
 import { maxRepeat, TShopDetail } from '../config';
 import { IUData } from '../types';
 import { findCorrectVersionSite } from '../utils/findCorrectVersionSite';
@@ -58,16 +58,20 @@ const getData: THandler = async (browser, data, extData = ''): Promise<boolean> 
   } catch (e) {}
 
   // Определение артикула
-  const artElem = await page.$('span.product__article');
+  const artElem = await page.$('p.product-page-content__article');
   const artData = (await artElem?.evaluate((el) => el.innerHTML)) || '';
-  const art = /^\s*Aртикул:\s*(?<art>\d+)\s*$/.exec(artData);
+  const art = /^\s*\W+:\s*(?<art>\d+)\s*$/.exec(artData);
   let id = '';
   if (art && art.groups) {
     id = art.groups.art;
   }
   // Определение названия
-  const nameElem = await page.$('h1.product__title');
-  const prodName = ((await nameElem?.evaluate((el) => el.innerHTML)) || '').trim();
+  const nameElem = await page.$('h1.product-page-content__product-name.catalog-heading.heading__h2 span');
+  let prodName = ((await nameElem?.evaluate((el) => el.innerHTML)) || '').trim();
+  const f = prodName.indexOf('<meta');
+  if (f > 0) {
+    prodName = prodName.slice(0, f - 1);
+  }
 
   // Получение картинки
 
@@ -81,15 +85,20 @@ const getData: THandler = async (browser, data, extData = ''): Promise<boolean> 
   // Получение цены
   // TODO Настроить обработку товаров с категорией расскупили
   const prodPrice: any = [];
-  const domPrice = await page.$$('section.product-prices__levels-info div.price-level');
+  const domPrice = await page.$$('li.product-range-prices__item');
   for (let j = 0; j < domPrice.length; j++) {
-    const priceRaw = await domPrice[j].$('span.level-price span');
+    const priceRaw = await domPrice[j].$('span.product-price__sum-rubles');
     if (!priceRaw) continue;
     const pr = (await priceRaw.evaluate((el) => el.innerHTML)) || '';
+
+    const itRaw = await domPrice[j].$('span.product-range-prices__item-count.nowrap');
+    if (!itRaw) continue;
+    const value = ((await itRaw.evaluate((el) => el.innerHTML)) || '').trim();
+
     const price = Number(pr.trim().replace('&nbsp;', ''));
-    const countRaw = await domPrice[j].$('span.level-min-count');
-    if (!countRaw) continue;
-    const value = findValue((await countRaw.evaluate((el) => el.innerHTML)) || '');
+    // const countRaw = await domPrice[j].$('span.level-min-count');
+    // if (!countRaw) continue;
+    // const value = findValue((await countRaw.evaluate((el) => el.innerHTML)) || '');
     prodPrice.push({ price, value });
     if (prodPrice.length > 0) {
       const wine = {
@@ -120,10 +129,15 @@ findCorrectVersionSite()
 
     // Нужно ли проверить возраст
     try {
-      await page.waitForSelector('button.product-item-button__btn-cart.age-confirm', {
-        timeout: 2000,
-      });
-      await page.click('button.product-item-button__btn-cart.age-confirm');
+      await page.waitForSelector(
+        'button.simple-button.reset-button.catalog-2-level-product-card__button.catalog-2-level-product-card__button--confirm-age.style--catalog-2-level-product-card.catalog--offline.offline-prices-sorting--best-level.not-in-cart',
+        {
+          timeout: 4000,
+        }
+      );
+      await page.click(
+        'button.simple-button.reset-button.catalog-2-level-product-card__button.catalog-2-level-product-card__button--confirm-age.style--catalog-2-level-product-card.catalog--offline.offline-prices-sorting--best-level.not-in-cart'
+      );
       console.log('Возраст подтвержден.');
     } catch (e) {
       console.log('Без подтверждения возроста.');
@@ -154,7 +168,7 @@ findCorrectVersionSite()
           counter--;
           try {
             await page.goto(`${shopData.shopUrl + shopData.categories.url + shopData.descUrl}&page=${pageCounter}`, { waitUntil: 'networkidle2' });
-            successful = true
+            successful = true;
           } catch (e) {
             console.warn('Ошибка при переходе на страницу', e);
           }
